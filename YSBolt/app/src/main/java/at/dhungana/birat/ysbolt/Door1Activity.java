@@ -3,20 +3,22 @@ package at.dhungana.birat.ysbolt;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.content.Intent;
 import android.widget.Button;
-import android.app.Notification;
-import android.app.NotificationManager;
+
 
 import org.w3c.dom.Text;
 
 import java.io.*;
 import java.net.*;
+
 
 public class Door1Activity extends AppCompatActivity{
 
@@ -27,7 +29,7 @@ public class Door1Activity extends AppCompatActivity{
 
     public final String lockCommand = "CMD"+"\\x00"+"lockdoor";
     public final String unlockCommand = "CMD"+"\\x00"+"unlockdoor";
-    private InetAddress IPADDRESS ;//= 192.168.0.21;
+    private InetAddress IPADDRESS;
     private int portNum = 2018;
 
     @Override
@@ -39,22 +41,30 @@ public class Door1Activity extends AppCompatActivity{
         lockButton = (Button)findViewById(R.id.lockbutton);
         unlockButton = (Button)findViewById(R.id.unlockbutton);
 
+        try{
+            IPADDRESS = InetAddress.getByName("192.168.0.21");
+        }catch(UnknownHostException e){
+            e.printStackTrace();
+        }
+
+
 
         lockButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Connection bits
-                Sender lockSender = new Sender(IPADDRESS,portNum,lockCommand);
-                lockSender.sendPacket();
+
+                    //Connection bits - send the lock command packet to the RPi
+                 Thread lockSender = new Thread(new Sender(IPADDRESS, portNum, lockCommand));
+                    lockSender.start();
 
 
-                //Notification after door has been locked.
-                NotificationManager notif = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-                Notification notify = new Notification.Builder(getApplicationContext()).setContentTitle("Door Locked!").setContentText("Door 1 is now locked.").setContentTitle(appName)
-                        .setSmallIcon(R.drawable.jokelogo).build();
+                    //Notification after door has been locked.
+                    NotificationManager notif = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    Notification notify = new Notification.Builder(getApplicationContext()).setContentTitle("Door Locked!").setContentText("Door 1 is now locked.").setContentTitle(appName)
+                            .setSmallIcon(R.drawable.jokelogo).build();
 
-                notify.flags |= Notification.FLAG_AUTO_CANCEL;
-                notif.notify(0, notify);
+                    notify.flags |= Notification.FLAG_AUTO_CANCEL;
+                    notif.notify(0, notify);
 
             }
         });
@@ -62,9 +72,10 @@ public class Door1Activity extends AppCompatActivity{
         unlockButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                //Connection bits
-                Sender unlockSender = new Sender(IPADDRESS, portNum, unlockCommand);
-                unlockSender.sendPacket();
+                //Connection bits - send the unlock command packet to the RPi;
+                Thread unlockSender = new Thread(new Sender(IPADDRESS, portNum, lockCommand));
+                unlockSender.start();
+
 
                 //Notification after door has been unlocked.
                 NotificationManager notif = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
@@ -88,7 +99,7 @@ public class Door1Activity extends AppCompatActivity{
 
     //------------------------Client for using TCP connection.------------------------------------------
 
-    private class Sender{
+    private class Sender implements Runnable{
         public int port;
         public String message;
         public InetAddress ip;
@@ -101,35 +112,39 @@ public class Door1Activity extends AppCompatActivity{
           this.message=message;
       }
 
-      public void sendPacket(){
-          //DatagramSocket closing_socket = null;
+      @Override
+      public void run() {
 
-          try{
-              DatagramSocket socket= new DatagramSocket(port);
+              try {
+                  Socket socket = new Socket(ip, port);
+                  DataOutputStream cmdOut = new DataOutputStream(socket.getOutputStream());
 
-              while(true){
-                  byte[] data = message.getBytes();
-                  DatagramPacket packet = new DatagramPacket(data, data.length, ip, port);
-                  socket.send(packet);
+                  while (true) {
+                      byte[] data = message.getBytes();
+                      cmdOut.writeBytes(message);
+                      cmdOut.flush();
 
-                  //waiting for ACK to receive
-                  for(;;){
-                      DatagramPacket ack_Packet = new DatagramPacket(new byte[PACKETSIZE], PACKETSIZE);
-                      socket.receive(ack_Packet);
-                      break;
+                     // DatagramPacket packet = new DatagramPacket(data, data.length, ip, port);
+                      //socket.send(packet);
+                      System.out.println("Packet sent!");
+
+                      //waiting for ACK to receive
+                      for (;;) {
+                          DatagramPacket ack_Packet = new DatagramPacket(new byte[PACKETSIZE], PACKETSIZE);
+                          //socket.receive(ack_Packet);
+                          break;
+                      }
                   }
-              }
-          }catch (Exception e){
-              e.printStackTrace();
-          }//end catch
-          //finally {
-              //if(closing_socket != null){
-               //   closing_socket.close();
-             // }//close if
-         // }//close finally
-      }//close sendPacket
+              } catch (Exception e) {
+                  e.printStackTrace();
+              }//end catch
+
+      }//end run
+
 
     }//end the nested class Sender
+
+
 }//end the Door1Activity class
 
 
