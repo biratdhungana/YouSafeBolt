@@ -22,10 +22,11 @@ public class Door1Activity extends AppCompatActivity{
     Button lockButton;
     Button unlockButton;
     String appName = "YSBolt";
+    final int DOORNUMBER = 1;
 
 
-    public final String lockCommand = "CMD\0LOCK DOOR";
-    public final String unlockCommand = "CMD\0UNLOCK DOOR";
+    public final String lockCommand = "CMD\0LOCK DOOR\0" + Integer.toString(DOORNUMBER);
+    public final String unlockCommand = "CMD\0UNLOCK DOOR\0" + Integer.toString(DOORNUMBER);
     private InetAddress IPADDRESS;
     private int portNum = 2018;
 
@@ -77,7 +78,7 @@ public class Door1Activity extends AppCompatActivity{
 
                 //Notification after door has been unlocked.
                 NotificationManager notif = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-                Notification notify = new Notification.Builder(getApplicationContext()).setContentTitle("Door Unlocked!").setContentText("Door 1 is now locked.").setContentTitle(appName)
+                Notification notify = new Notification.Builder(getApplicationContext()).setContentTitle("Door 1 Unlocked!").setContentText("Door 1 is now locked.").setContentTitle(appName)
                         .setSmallIcon(R.drawable.jokelogo).build();
 
                 notify.flags |= Notification.FLAG_AUTO_CANCEL;
@@ -98,11 +99,10 @@ public class Door1Activity extends AppCompatActivity{
     //------------------------Client for using TCP connection.------------------------------------------
 
     private class Sender implements Runnable{
-        public int port;
-        public String message;
-        public InetAddress ip;
-        public boolean sentOnce = false;
-        public byte[] inputData;
+        int port;
+        String message;
+        InetAddress ip;
+        String messageReceived;
 
 
         public Sender(InetAddress ip, int port, String message){ //Constructor
@@ -116,30 +116,23 @@ public class Door1Activity extends AppCompatActivity{
 
             try {
                 Socket socket = new Socket(ip, port);
+
+                //initiate input and output streams
                 DataOutputStream cmdOut = new DataOutputStream(socket.getOutputStream());
-                DataInputStream ackIn = new DataInputStream(socket.getInputStream());
 
                // while (true) {
-                   //while(!sentOnce) {
-                        byte[] data = message.getBytes();
-                        cmdOut.writeBytes(message);
-                        // cmdOut.flush();
+                        cmdOut.writeBytes(message); //convert them into bytes
+                        System.out.println("Packet sent:   " + message);
 
-                        System.out.println("Command sent!");
 
-                        sentOnce = true;
-                    //}
-                    //waiting for ACK to receive
-                    for (;;) {
-                        ackIn.read(inputData);
-                        System.out.println(inputData.length); //
-                        String messageReceived = new String(inputData, "UTF-8");
+                        //Receiving ACK froom the input stream
+                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                        messageReceived = in.readLine();
+                        System.out.println(messageReceived);
 
-                        System.out.print(messageReceived);
-                        break;
-                    }
+                        socket.close();
 
-                //}//end while(true)
+              //  }//end while(true)
             } catch (Exception e) {
                 e.printStackTrace();
             }//end catch

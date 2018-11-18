@@ -54,7 +54,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Click her to check on door 1!"
+        android:text="Click here to check on door 1!"
         android:id="@+id/door1button"
         android:layout_below="@id/notify"
         android:layout_centerHorizontal="true"
@@ -64,7 +64,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Click here to check on door 1!"
+        android:text="Click here to check on door 2!"
         android:src="@drawable/door2"
         android:id="@+id/door2button"
         android:layout_below="@id/door1button"
