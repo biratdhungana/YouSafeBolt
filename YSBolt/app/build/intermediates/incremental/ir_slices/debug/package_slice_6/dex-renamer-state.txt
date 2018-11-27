@@ -1,0 +1,4 @@
+#Sat Nov 17 14:08:12 EST 2018
+base.0=C\:\\Users\\Birat\\AndroidStudioProjects\\YSBolt\\app\\build\\intermediates\\transforms\\dexMerger\\debug\\6
+path.0=classes.dex
+renamed.0=classes.dex
